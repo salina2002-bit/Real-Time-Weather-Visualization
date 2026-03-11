@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "school",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "School name": "Shree rastriya secondary school", "district": "Ilam", "Gupalika": "Sandakpur", "ward\/tole": "05\/Ingla", "latitude": 27.012357, "longitude": 87.994633, "establish date": "2024 B.S" }, "geometry": { "type": "Point", "coordinates": [ 87.994633, 27.012357 ] } }
+]
+}

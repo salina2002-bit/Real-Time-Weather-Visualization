@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Assignment</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.5.0/fonts/remixicon.css" rel="stylesheet" />
+    <style>
+        #map {
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #location {
+            border-radius: 10px;
+            border: 2px solid grey;
+            background-color: white;
+            font-size: 2rem;
+            transition: transform 0.4s;
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        #location:hover {
+            transform: scale(1.1);
+        }
+
+        #weather-popup {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            border: 2px solid #ccc;
+            border-radius: 10px;
+            padding: 10px;
+            z-index: 1000;
+            font-family: Arial, sans-serif;
+        }
+
+        #weather-popup h3 {
+            margin: 0;
+            font-size: 1.2rem;
+        }
+
+
+        /* Styling for project details button */
+        #about-project {
+            position: fixed;
+            bottom: 100px;
+            left: 20px;
+            background-color: #007BFF;
+            color: white;
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1100;
+        }
+
+        #about-project-info {
+            display: none;
+            position: fixed;
+            bottom: 20px;  /* Position it at the bottom-left */
+            left: 20px;    /* Position it at the left */
+            background-color: white;
+            padding: 10px;
+            border: 2px solid #007BFF;
+            border-radius: 5px;
+            width: 350px;  /* Small width for the box */
+            height: 250px; /* Limit the height for scroll */
+            overflow-y: scroll; /* Allow vertical scrolling */
+            z-index: 1100;
+            font-family: Arial, sans-serif;
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+        
+        #about-project-info p {
+            margin: 10px 0;  /* Add space between paragraphs */
+            font-size: 1rem;
+        }
+        
+        #about-project-info::-webkit-scrollbar {
+            width: 8px;  /* Scrollbar width */
+        }
+        
+        #about-project-info::-webkit-scrollbar-thumb {
+            background-color: #007BFF;  /* Scrollbar color */
+            border-radius: 10px;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <div id="map"></div>
+    <div id="location"><i class="ri-map-pin-line"></i></div>
+    <div id="weather-popup"></div>
+    <div id="location-details"></div>
+
+    <!-- Button for showing project details -->
+    <div id="about-project">About Project</div>
+    
+    <!-- Section for project details (initially hidden) -->
+    <div id="about-project-info">
+        
+        <h3>About the Project</h3>
+        <p><strong>Student:</strong></p><br>
+            Name: Salina Gurung<br>
+            Roll no: 18<br>
+            Department: Geomatics Engineering<br>
+            Year/sem: 4th/1st<br>
+            Subject: WebGIS<br>
+
+    <!-- Add image below the subject -->
+    <img src="Salina.png" alt="Salina's Project Image" style="width: 100px; height: auto; margin-top: 10px;">
+
+        <p><strong>1. Languages Used:</strong><br>
+            HTML: The structure of the webpage is built using HTML. It defines the layout and elements, including the map container (#map), location details container (#location-details), and weather popup (#weather-popup).<br>
+            CSS: CSS is used to style the elements such as the map, location button, weather popup, and location details box. Specific styles like width, height, position, and hover effects are used to improve the appearance of the page.<br>
+            JavaScript: JavaScript is used to add interactivity to the webpage. It handles dynamic actions like displaying the map, loading GeoJSON layers, interacting with APIs, and updating the map based on user location or weather information.
+        </p>
+        <p><strong>2. JavaScript Libraries and APIs Used:</strong><br>
+            Leaflet.js: A powerful open-source JavaScript library for building interactive maps. It handles the map initialization, layers, markers, and popups.<br>
+            Axios: A promise-based HTTP client for making HTTP requests. Used to fetch data from external APIs like weather data and geolocation information.<br>
+            OpenCageData API: Provides geolocation information based on latitude and longitude.<br>
+            WeatherAPI: Fetches real-time weather data for a given location.
+        </p>
+        <p><strong>3. Functionality of the Code:</strong><br>
+            - Map Initialization: The map is created using Leaflet.js, with zoom controls and a base layer from OpenStreetMap.<br>
+            - GeoJSON Layers: Multiple GeoJSON files representing geographic features are loaded dynamically using Axios.<br>
+            - Weather and Location details: Real-time weather and location details are fetched and displayed dynamically based on user interactions.
+        </p>
+        
+
+        </p>
+    <script>
+        // Initialize the map
+        const map = L.map('map', {
+            center: [27.7277628, 85.3348676],
+            zoom: 7,
+            zoomControl: true,
+            attributionControl: true,
+            scrollWheelZoom: true,
+        });
+
+        // Add base layer
+        const baseLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        const overlayLayers = {};
+        const layerControl = L.control.layers({ "Base Layer": baseLayer }, overlayLayers).addTo(map);
+
+        // GeoJSON Layers
+        const geojsonFiles = [
+            { path: './data.geojson', name: "Student's Location" },
+            { path: './municipality.geojson', name: 'Municipality', color: 'green' },
+            { path: './district.geojson', name: 'District', color: 'blue' },
+            { path: './province.geojson', name: 'Province', color: 'red' },
+            { path: './schools.geojson', name: 'Schools' },
+            { path: './School5km.geojson', name: 'Schools within 5km' }
+        ];
+
+        geojsonFiles.forEach(file => {
+            axios.get(file.path)
+                .then(response => {
+                    const layer = L.geoJSON(response.data, {
+                        style: { color: file.color || 'black', weight: 2 },
+                        onEachFeature: (feature, layer) => {
+                            let popupContent = `<strong>${file.name}</strong><br>`;
+                            if (feature.properties) {
+                                for (let key in feature.properties) {
+                                    popupContent += `${key}: ${feature.properties[key]}<br>`;
+                                }
+                            }
+                            layer.bindPopup(popupContent);
+                        }
+                    }).addTo(map);
+
+                    overlayLayers[file.name] = layer;
+                    layerControl.addOverlay(layer, file.name);
+                })
+                .catch(error => console.error(`Error loading ${file.name}:`, error));
+        });
+
+        // Add school symbol for Shree Rastriya Secondary School
+        const schoolIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/3176/3176294.png',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [10, -32]
+        });
+
+        const schoolCoords = [27.012361, 87.994639]; // 27°00'44.5"N 87°59'40.7"E in decimal
+        const schoolMarker = L.marker(schoolCoords, { icon: schoolIcon })
+            .bindPopup("<strong>Shree Rastriya Secondary School</strong><br>This school is located within 5 km of my hometown.")
+            .addTo(map);
+
+        layerControl.addOverlay(schoolMarker, 'Shree Rastriya Secondary School');
+
+        // Add GE2020students.geojson with home symbol
+        const homeIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/1946/1946488.png',
+            iconSize: [10,10],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+
+        axios.get('./GE2020studentslocation.geojson')
+            .then(response => {
+                const studentsLayer = L.geoJSON(response.data, {
+                    pointToLayer: (feature, latlng) => L.marker(latlng, { icon: homeIcon }),
+                    onEachFeature: (feature, layer) => {
+                        let popupContent = "<strong>Student's Location</strong><br>";
+                        if (feature.properties) {
+                            for (let key in feature.properties) {
+                                popupContent += `${key}: ${feature.properties[key]}<br>`;
+                            }
+                        }
+                        layer.bindPopup(popupContent);
+                    }
+                }).addTo(map);
+
+                overlayLayers["GE2020studentslocation"] = studentsLayer;
+                layerControl.addOverlay(studentsLayer, 'GE2020studentslocation');
+            })
+            .catch(error => console.error('Error loading GE2020studentslocation:', error));
+
+        // Weather and Location functions remain unchanged
+        function updateWeather(lat, lon) {
+            axios.get('https://api.weatherapi.com/v1/current.json', {
+                params: {
+                    key: 'a7fdf20708374d7aae7142724240412', 
+                    q: `${lat},${lon}`,
+                }
+            })
+                .then(response => {
+                    const data = response.data;
+                    const weatherPopupContent = `
+                        <h3>Real-Time Weather</h3>
+                        <strong>Location:</strong> ${data.location.name}, ${data.location.region}<br>
+                        <strong>Temperature:</strong> ${data.current.temp_c} °C<br>
+                        <strong>Condition:</strong> ${data.current.condition.text}<br>
+                        <strong>Wind Speed:</strong> ${data.current.wind_kph} kph<br>
+                        <strong>Humidity:</strong> ${data.main.humidity} %<br>
+                    
+                    `;
+                    document.getElementById('weather-popup').innerHTML = weatherPopupContent;
+                    weatherMarker.bindPopup(weatherPopupContent).openPopup();
+                })
+                .catch(error => console.error('Error loading weather data:', error));
+        }
+
+        const initialCoords = [27.7277628, 87.3348676];
+        const weatherMarker = L.marker(initialCoords, {
+            draggable: true,
+            title: "Drag me to see weather at different locations!"
+        }).addTo(map);
+
+        updateWeather(initialCoords[0], initialCoords[1]);
+
+        weatherMarker.on('dragend', (event) => {
+            const { lat, lng } = event.target.getLatLng();
+            updateWeather(lat, lng);
+        });
+
+        layerControl.addOverlay(weatherMarker, 'Draggable Weather Marker');
+
+        function getLocationDetails(lat, lon) {
+            axios.get('https://api.opencagedata.com/geocode/v1/json', {
+                params: {
+                    key: 'e1709bc65da44497bcee65ba9cb4cb13', 
+                    language: 'en',
+                    pretty: 1
+                }
+            })
+            .then(response => {
+                const data = response.data;
+                const location = data.results[0];
+
+                // Check for missing address components and use fallback values if necessary
+                const street = location.components.road || 'N/A';
+                const city = location.components.city || 'N/A';
+                const country = location.components.country || 'N/A';
+                const formattedAddress = location.formatted || 'No address available';
+                
+                const locationDetailsContent = `
+                    <h3>Location Details</h3>
+                    <strong>Address:</strong> ${formattedAddress}<br>
+                    <strong>Country:</strong> ${country}<br>
+                    <strong>Latitude:</strong> ${lat}<br>
+                    <strong>Longitude:</strong> ${lon}<br>
+                `;
+
+                // Display the location details
+                document.getElementById('location-details').innerHTML = locationDetailsContent;
+
+                // Add marker for user's location
+                L.marker([lat, lon]).addTo(map)
+                    .bindPopup(locationDetailsContent)
+                    .openPopup();
+            })
+            .catch(error => console.error('Error fetching location details:', error));
+        }
+
+        // Geolocator button click handler
+        document.getElementById('location').addEventListener('click', () => {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    map.setView([lat, lon], 13);
+                    getLocationDetails(lat, lon);
+                }, (error) => {
+                    alert("Geolocation failed. Please enable location services.");
+                });
+            } else {
+                alert("Geolocation is not supported by this browser.");
+            }
+        });
+
+        // Button click to toggle project details visibility
+        document.getElementById('about-project').addEventListener('click', () => {
+            const projectInfo = document.getElementById('about-project-info');
+            projectInfo.style.display = projectInfo.style.display === 'none' ? 'block' : 'none';
+        });
+    </script>
+</body>
+
+</html>
