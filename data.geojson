@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "Book1",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "Name": "Salina Gurung", "Municipality": "Sandakpur", "District": "ilam", "Province": "koshi", "Latitude": 27.01287, "Longitude": 87.997793 }, "geometry": { "type": "Point", "coordinates": [ 87.997793, 27.01287 ] } }
+]
+}
